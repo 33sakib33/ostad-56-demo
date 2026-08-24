@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Performance Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { background: #f0f2f6; font-family: 'Segoe UI', sans-serif; }
+.card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 16px; margin-bottom: 20px; }
+.card h2 { font-size: 14px; color: #666; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 32px; font-weight: 700; margin: 0; }
+</style>
+</head>
+<body class="p-6">
+<div class="max-w-7xl mx-auto">
+
+<h1 class="text-3xl font-bold text-gray-800 mb-1">Student Performance Dashboard</h1>
+<p class="text-gray-500 mb-6">Interactive analysis of 10 student records</p>
+
+<div id="stats" class="grid grid-cols-4 gap-4 mb-6"></div>
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><h2>Score Distribution</h2><div id="chart1"></div></div>
+  <div class="card"><h2>Attendance vs Scores</h2><div id="chart2"></div></div>
+</div>
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><h2>Study Hours vs Scores</h2><div id="chart3"></div></div>
+  <div class="card"><h2>Avg Scores by Socioeconomic Status</h2><div id="chart4"></div></div>
+</div>
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><h2>Scores by Gender</h2><div id="chart5"></div></div>
+  <div class="card"><h2>Teacher Feedback</h2><div id="chart6"></div></div>
+</div>
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><h2>Correlation Heatmap</h2><div id="chart7"></div></div>
+  <div class="card"><h2>Parental Involvement Impact</h2><div id="chart8"></div></div>
+</div>
+
+<p class="text-center text-gray-400 text-sm py-4">Built with Plotly.js | Student Performance Demo</p>
+
+</div>
+<script>
+const d = {"student_id": ["STU001", "STU002", "STU003", "STU004", "STU005", "STU006", "STU007", "STU008", "STU009", "STU010"], "gender": ["Female", "Male", "Male", "Female", "Other", "Female", "Male", "Female", "Male", "Female"], "socioeconomic_status": ["Medium", "Low", "High", "Low", "Medium", "High", "Low", "Medium", "Medium", "High"], "attendance_rate": [94.2, 81.5, 98.0, 88.7, 91.1, 96.5, 76.4, 89.3, 92.0, 99.1], "study_hours_per_week": [12, 4, 15, 7, 9, 14, 3, 8, 11, 18], "parental_involvement": ["High", "Low", "High", "Medium", "Medium", "High", "Low", "Low", "Medium", "High"], "internet_access": ["Yes", "No", "Yes", "Yes", "Yes", "Yes", "No", "Yes", "Yes", "Yes"], "school_resource_rating": [4, 2, 5, 3, 4, 5, 2, 3, 4, 5], "math_score": [85, 58, 92, 67, 74, 91, 45, 71, 80, 98], "reading_score": [88, 62, 95, 71, 78, 89, 50, 73, 82, 97], "teacher_feedback": ["Positive", "Needs Improvement", "Positive", "Consistent", "Positive", "Positive", "Needs Improvement", "Consistent", "Positive", "Positive"]};
+
+const math = d.math_score, read = d.reading_score, att = d.attendance_rate, study = d.study_hours_per_week;
+const res = d.school_resource_rating, socio = d.socioeconomic_status, gender = d.gender;
+const feedback = d.teacher_feedback, parent = d.parental_involvement, internet = d.internet_access;
+const ids = d.student_id;
+
+const avg = a => a.reduce((s,v)=>s+v,0)/a.length;
+
+// Stats
+const statsHTML = `
+  <div class="card text-center"><h2>Avg Math Score</h2><p class="stat-value text-blue-600">${avg(math).toFixed(1)}</p></div>
+  <div class="card text-center"><h2>Avg Reading Score</h2><p class="stat-value text-green-600">${avg(read).toFixed(1)}</p></div>
+  <div class="card text-center"><h2>Avg Attendance</h2><p class="stat-value text-cyan-600">${avg(att).toFixed(1)}%</p></div>
+  <div class="card text-center"><h2>Avg Study Hrs/Wk</h2><p class="stat-value text-amber-600">${avg(study).toFixed(1)}</p></div>
+`;
+document.getElementById('stats').innerHTML = statsHTML;
+
+// 1. Score Distribution Histogram
+Plotly.newPlot('chart1', [
+  {x: math, type: 'histogram', nbinsx: 8, name: 'Math', marker: {color: '#3498db'}},
+  {x: read, type: 'histogram', nbinsx: 8, name: 'Reading', marker: {color: '#2ecc71'}}
+], {barmode: 'overlay', opacity: 0.7, margin: {t: 10, r: 10, b: 40, l: 50}, height: 280},
+{responsive: true, displayModeBar: false});
+
+// 2. Attendance vs Scores
+const colors = {'High': '#2ecc71', 'Medium': '#f39c12', 'Low': '#e74c3c'};
+Plotly.newPlot('chart2', [{
+  x: att, y: math, mode: 'markers', text: ids,
+  marker: {size: study.map(s=>s*3), color: socio.map(s=>colors[s]), line: {color: '#fff', width: 1}},
+  hovertemplate: '%{text}<br>Att: %{x}%<br>Math: %{y}<extra></extra>'
+}], {xaxis: {title: 'Attendance Rate (%)'}, yaxis: {title: 'Math Score'},
+  margin: {t: 10, r: 10, b: 40, l: 50}, height: 280, showlegend: false},
+{responsive: true, displayModeBar: false});
+
+// 3. Study Hours vs Reading
+Plotly.newPlot('chart3', [{
+  x: study, y: read, mode: 'markers', text: ids,
+  marker: {size: att.map(a=>a/4), color: socio.map(s=>colors[s]), line: {color: '#fff', width: 1}},
+  hovertemplate: '%{text}<br>Study: %{x}h<br>Reading: %{y}<extra></extra>'
+}], {xaxis: {title: 'Study Hours/Week'}, yaxis: {title: 'Reading Score'},
+  margin: {t: 10, r: 10, b: 40, l: 50}, height: 280, showlegend: false},
+{responsive: true, displayModeBar: false});
+
+// 4. Socioeconomic Status Bar
+function groupAvg(field, group) {
+  const map = {};
+  group.forEach((g,i) => { if(!map[g]) map[g] = []; map[g].push(field[i]); });
+  return Object.fromEntries(Object.entries(map).map(([k,v]) => [k, avg(v)]));
+}
+const socioMath = groupAvg(math, socio);
+const socioRead = groupAvg(read, socio);
+const order = ['High', 'Medium', 'Low'];
+Plotly.newPlot('chart4', [
+  {x: order, y: order.map(s=>socioMath[s]), type: 'bar', name: 'Math', marker: {color: '#3498db'}},
+  {x: order, y: order.map(s=>socioRead[s]), type: 'bar', name: 'Reading', marker: {color: '#2ecc71'}}
+], {barmode: 'group', margin: {t: 10, r: 10, b: 40, l: 50}, height: 280},
+{responsive: true, displayModeBar: false});
+
+// 5. Gender Box Plots
+const gData = {};
+gender.forEach((g,i) => { if(!gData[g]) gData[g] = {math:[], read:[]}; gData[g].math.push(math[i]); gData[g].read.push(read[i]); });
+const gTraces = [];
+['Female','Male','Other'].forEach(g => {
+  if(gData[g]) {
+    gTraces.push({y: gData[g].math, name: g+' Math', marker: {color: '#3498db'}, type: 'box'});
+    gTraces.push({y: gData[g].read, name: g+' Read', marker: {color: '#2ecc71'}, type: 'box'});
+  }
+});
+Plotly.newPlot('chart5', gTraces, {margin: {t: 10, r: 10, b: 40, l: 50}, height: 280},
+{responsive: true, displayModeBar: false});
+
+// 6. Teacher Feedback Pie
+const fbCount = {}; feedback.forEach(f => { fbCount[f] = (fbCount[f]||0)+1; });
+const fbColors = {'Positive': '#2ecc71', 'Consistent': '#3498db', 'Needs Improvement': '#e74c3c'};
+Plotly.newPlot('chart6', [{
+  labels: Object.keys(fbCount), values: Object.values(fbCount), type: 'pie', hole: 0.4,
+  marker: {colors: Object.keys(fbCount).map(k=>fbColors[k])},
+  textinfo: 'label+percent'
+}], {margin: {t: 10, r: 10, b: 10, l: 10}, height: 280, showlegend: false},
+{responsive: true, displayModeBar: false});
+
+// 7. Correlation Heatmap
+const fields = [att, study, res, math, read];
+const labels = ['Attendance','Study Hrs','Resources','Math','Reading'];
+const corr = labels.map((_,i) => labels.map((_,j) => {
+  const xi = fields[i], xj = fields[j];
+  const n = xi.length;
+  const mx = avg(xi), my = avg(xj);
+  const num = xi.reduce((s,x,i) => s + (x-mx)*(xj[i]-my), 0);
+  const dx = Math.sqrt(xi.reduce((s,x) => s + (x-mx)**2, 0));
+  const dy = Math.sqrt(xj.reduce((s,y) => s + (y-my)**2, 0));
+  return num/(dx*dy);
+}));
+Plotly.newPlot('chart7', [{
+  z: corr, x: labels, y: labels, type: 'heatmap',
+  colorscale: [[0,'#e74c3c'],[0.5,'#f8f9fa'],[1,'#2ecc71']],
+  zmin: -1, zmax: 1, text: corr.map(r=>r.map(v=>v.toFixed(2))),
+  texttemplate: '%{text}', textfont: {size: 11}
+}], {margin: {t: 10, r: 10, b: 60, l: 60}, height: 320},
+{responsive: true, displayModeBar: false});
+
+// 8. Parental Involvement Line
+const pMath = groupAvg(math, parent);
+const pRead = groupAvg(read, parent);
+const pOrder = ['High', 'Medium', 'Low'];
+Plotly.newPlot('chart8', [
+  {x: pOrder, y: pOrder.map(p=>pMath[p]), type: 'scatter', mode: 'lines+markers',
+   name: 'Math', marker: {size: 12, color: '#3498db'}, line: {width: 3}},
+  {x: pOrder, y: pOrder.map(p=>pRead[p]), type: 'scatter', mode: 'lines+markers',
+   name: 'Reading', marker: {size: 12, color: '#2ecc71'}, line: {width: 3}}
+], {xaxis: {title: 'Parental Involvement'}, yaxis: {title: 'Average Score'},
+  margin: {t: 10, r: 10, b: 40, l: 50}, height: 280},
+{responsive: true, displayModeBar: false});
+</script>
+</body>
+</html>

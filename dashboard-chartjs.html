@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Performance - Chart.js</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { background: #f0f2f6; font-family: 'Segoe UI', sans-serif; }
+.card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+.card-title { font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+.stat { font-size: 32px; font-weight: 700; }
+.chart-container { position: relative; height: 260px; width: 100%; }
+</style>
+</head>
+<body class="p-6">
+<div class="max-w-7xl mx-auto">
+
+<h1 class="text-3xl font-bold text-gray-800 mb-1">Student Performance Dashboard</h1>
+<p class="text-gray-500 mb-6">Built with Chart.js</p>
+
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="card text-center"><div class="card-title">Avg Math Score</div><div class="stat text-blue-600" id="statMath"></div></div>
+  <div class="card text-center"><div class="card-title">Avg Reading Score</div><div class="stat text-green-600" id="statRead"></div></div>
+  <div class="card text-center"><div class="card-title">Avg Attendance</div><div class="stat text-cyan-600" id="statAtt"></div></div>
+  <div class="card text-center"><div class="card-title">Avg Study Hrs/Wk</div><div class="stat text-amber-600" id="statStudy"></div></div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><div class="card-title">Score Distribution</div><div class="chart-container"><canvas id="chart1"></canvas></div></div>
+  <div class="card"><div class="card-title">Attendance vs Math Score</div><div class="chart-container"><canvas id="chart2"></canvas></div></div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><div class="card-title">Study Hours vs Reading Score</div><div class="chart-container"><canvas id="chart3"></canvas></div></div>
+  <div class="card"><div class="card-title">Avg Scores by Socioeconomic Status</div><div class="chart-container"><canvas id="chart4"></canvas></div></div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><div class="card-title">Scores by Gender</div><div class="chart-container"><canvas id="chart5"></canvas></div></div>
+  <div class="card"><div class="card-title">Teacher Feedback</div><div class="chart-container"><canvas id="chart6"></canvas></div></div>
+</div>
+
+<div class="grid grid-cols-2 gap-6 mb-6">
+  <div class="card"><div class="card-title">Scores by Parental Involvement</div><div class="chart-container"><canvas id="chart7"></canvas></div></div>
+  <div class="card"><div class="card-title">Resource Rating vs Avg Score</div><div class="chart-container"><canvas id="chart8"></canvas></div></div>
+</div>
+
+<p class="text-center text-gray-400 text-sm py-4">Built with Chart.js | Student Performance Demo</p>
+
+</div>
+
+<script>
+const data = {
+  student_id: ["STU001","STU002","STU003","STU004","STU005","STU006","STU007","STU008","STU009","STU010"],
+  gender: ["Female","Male","Male","Female","Other","Female","Male","Female","Male","Female"],
+  socioeconomic_status: ["Medium","Low","High","Low","Medium","High","Low","Medium","Medium","High"],
+  attendance_rate: [94.2,81.5,98.0,88.7,91.1,96.5,76.4,89.3,92.0,99.1],
+  study_hours_per_week: [12,4,15,7,9,14,3,8,11,18],
+  parental_involvement: ["High","Low","High","Medium","Medium","High","Low","Low","Medium","High"],
+  internet_access: ["Yes","No","Yes","Yes","Yes","Yes","No","Yes","Yes","Yes"],
+  school_resource_rating: [4,2,5,3,4,5,2,3,4,5],
+  math_score: [85,58,92,67,74,91,45,71,80,98],
+  reading_score: [88,62,95,71,78,89,50,73,82,97],
+  teacher_feedback: ["Positive","Needs Improvement","Positive","Consistent","Positive","Positive","Needs Improvement","Consistent","Positive","Positive"],
+};
+
+const avg = a => (a.reduce((s,v)=>s+v,0)/a.length).toFixed(1);
+document.getElementById('statMath').textContent = avg(data.math_score);
+document.getElementById('statRead').textContent = avg(data.reading_score);
+document.getElementById('statAtt').textContent = avg(data.attendance_rate) + '%';
+document.getElementById('statStudy').textContent = avg(data.study_hours_per_week);
+
+function groupBy(arr, field) {
+  const map = {};
+  data[field].forEach((key, i) => { if (!map[key]) map[key] = []; map[key].push(arr[i]); });
+  return map;
+}
+function avgMap(map) {
+  return Object.fromEntries(Object.entries(map).map(([k,v]) => [k, v.reduce((s,x)=>s+x,0)/v.length]));
+}
+function sortByRef(obj, ref) {
+  return Object.fromEntries(ref.filter(k => k in obj).map(k => [k, obj[k]]));
+}
+
+// 1. Score Distribution (bar chart)
+new Chart(document.getElementById('chart1'), {
+  type: 'bar',
+  data: {
+    labels: data.student_id,
+    datasets: [
+      { label: 'Math', data: data.math_score, backgroundColor: 'rgba(52,152,219,0.7)', borderRadius: 4 },
+      { label: 'Reading', data: data.reading_score, backgroundColor: 'rgba(46,204,113,0.7)', borderRadius: 4 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { y: { beginAtZero: true, max: 100 } },
+    plugins: { legend: { position: 'top' } }
+  }
+});
+
+// 2. Attendance vs Math (scatter)
+new Chart(document.getElementById('chart2'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'Students', data: data.attendance_rate.map((x,i) => ({x, y: data.math_score[i]})),
+      backgroundColor: data.socioeconomic_status.map(s =>
+        s==='High' ? '#2ecc71' : s==='Medium' ? '#f39c12' : '#e74c3c'),
+      pointRadius: data.study_hours_per_week.map(h => 4 + h * 0.8),
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { x: { title: { display: true, text: 'Attendance Rate (%)' } },
+             y: { title: { display: true, text: 'Math Score' }, beginAtZero: true } },
+    plugins: { tooltip: { callbacks: { label: ctx => {
+      const i = ctx.dataIndex;
+      return `${data.student_id[i]} | Att: ${ctx.parsed.x}% | Math: ${ctx.parsed.y} | Socio: ${data.socioeconomic_status[i]}`;
+    }}}}
+  }
+});
+
+// 3. Study Hours vs Reading (scatter)
+new Chart(document.getElementById('chart3'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: 'Students', data: data.study_hours_per_week.map((x,i) => ({x, y: data.reading_score[i]})),
+      backgroundColor: data.socioeconomic_status.map(s =>
+        s==='High' ? '#2ecc71' : s==='Medium' ? '#f39c12' : '#e74c3c'),
+      pointRadius: data.attendance_rate.map(a => 3 + a * 0.07),
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { x: { title: { display: true, text: 'Study Hours/Week' } },
+             y: { title: { display: true, text: 'Reading Score' }, beginAtZero: true } },
+    plugins: { tooltip: { callbacks: { label: ctx => {
+      const i = ctx.dataIndex;
+      return `${data.student_id[i]} | Study: ${ctx.parsed.x}h | Read: ${ctx.parsed.y}`;
+    }}}}
+  }
+});
+
+// 4. Socioeconomic Status (grouped bar)
+const socioMath = avgMap(groupBy(data.math_score, 'socioeconomic_status'));
+const socioRead = avgMap(groupBy(data.reading_score, 'socioeconomic_status'));
+const socioOrder = ['High', 'Medium', 'Low'];
+new Chart(document.getElementById('chart4'), {
+  type: 'bar',
+  data: {
+    labels: socioOrder,
+    datasets: [
+      { label: 'Math', data: socioOrder.map(s => socioMath[s]), backgroundColor: 'rgba(52,152,219,0.8)', borderRadius: 4 },
+      { label: 'Reading', data: socioOrder.map(s => socioRead[s]), backgroundColor: 'rgba(46,204,113,0.8)', borderRadius: 4 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { position: 'top' } }
+  }
+});
+
+// 5. Gender (radar chart - avg math & reading per gender)
+const genders = [...new Set(data.gender)];
+const gMath = avgMap(groupBy(data.math_score, 'gender'));
+const gRead = avgMap(groupBy(data.reading_score, 'gender'));
+new Chart(document.getElementById('chart5'), {
+  type: 'radar',
+  data: {
+    labels: genders,
+    datasets: [
+      { label: 'Math', data: genders.map(g => gMath[g]), backgroundColor: 'rgba(52,152,219,0.2)',
+        borderColor: '#3498db', borderWidth: 2, pointBackgroundColor: '#3498db' },
+      { label: 'Reading', data: genders.map(g => gRead[g]), backgroundColor: 'rgba(46,204,113,0.2)',
+        borderColor: '#2ecc71', borderWidth: 2, pointBackgroundColor: '#2ecc71' }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { r: { beginAtZero: true, max: 100 } },
+    plugins: { legend: { position: 'top' } }
+  }
+});
+
+// 6. Teacher Feedback (doughnut)
+const fbCounts = {};
+data.teacher_feedback.forEach(f => { fbCounts[f] = (fbCounts[f]||0)+1; });
+const fbColors = {'Positive': '#2ecc71', 'Consistent': '#3498db', 'Needs Improvement': '#e74c3c'};
+new Chart(document.getElementById('chart6'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(fbCounts),
+    datasets: [{
+      data: Object.values(fbCounts),
+      backgroundColor: Object.keys(fbCounts).map(k => fbColors[k]),
+      borderWidth: 0
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right' } },
+    cutout: '55%'
+  }
+});
+
+// 7. Parental Involvement (horizontal bar)
+const pMath = avgMap(groupBy(data.math_score, 'parental_involvement'));
+const pRead = avgMap(groupBy(data.reading_score, 'parental_involvement'));
+const pOrder = ['High', 'Medium', 'Low'];
+new Chart(document.getElementById('chart7'), {
+  type: 'bar',
+  data: {
+    labels: pOrder,
+    datasets: [
+      { label: 'Math', data: pOrder.map(p => pMath[p]), backgroundColor: 'rgba(52,152,219,0.8)', borderRadius: 4 },
+      { label: 'Reading', data: pOrder.map(p => pRead[p]), backgroundColor: 'rgba(46,204,113,0.8)', borderRadius: 4 }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+    scales: { x: { beginAtZero: true } },
+    plugins: { legend: { position: 'top' } }
+  }
+});
+
+// 8. Resource Rating (line)
+const resGroups = {};
+data.school_resource_rating.forEach((r,i) => {
+  if (!resGroups[r]) resGroups[r] = {math:[], read:[]};
+  resGroups[r].math.push(data.math_score[i]);
+  resGroups[r].read.push(data.reading_score[i]);
+});
+const resLabels = Object.keys(resGroups).sort((a,b)=>a-b);
+const resMath = resLabels.map(r => avg(resGroups[r].math));
+const resRead = resLabels.map(r => avg(resGroups[r].read));
+new Chart(document.getElementById('chart8'), {
+  type: 'line',
+  data: {
+    labels: resLabels.map(r => '⭐'.repeat(Number(r))),
+    datasets: [
+      { label: 'Math', data: resMath, borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)',
+        tension: 0.3, pointRadius: 6, pointBackgroundColor: '#3498db', fill: true },
+      { label: 'Reading', data: resRead, borderColor: '#2ecc71', backgroundColor: 'rgba(46,204,113,0.1)',
+        tension: 0.3, pointRadius: 6, pointBackgroundColor: '#2ecc71', fill: true }
+    ]
+  },
+  options: { responsive: true, maintainAspectRatio: false,
+    scales: { y: { beginAtZero: true } },
+    plugins: { legend: { position: 'top' } }
+  }
+});
+</script>
+</body>
+</html>
